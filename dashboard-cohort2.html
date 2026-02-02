@@ -318,6 +318,7 @@
     <div class="tab" data-tab="cs">CS Progress</div>
     <div class="tab" data-tab="health">Health Points</div>
     <div class="tab" data-tab="tickets">Tickets</div>
+    <div class="tab" data-tab="mydashboard">My Dashboard</div>
   </div>
 
   <div class="top-bar-spacer"></div>
@@ -468,6 +469,99 @@
         <p class="soon">Will be added soon</p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- My Dashboard Tab -->
+<div class="tab-content" id="tab-mydashboard">
+  <div style="padding:30px; max-width:1200px; margin:0 auto;">
+    
+    <h2 style="color:#1a237e; margin-bottom:20px;">My Dashboard</h2>
+    
+    <!-- Email Search -->
+    <div style="display:flex; gap:12px; margin-bottom:30px; align-items:center;">
+      <input id="my-email-input" 
+             type="email" 
+             placeholder="Enter your email"
+             style="flex:1; max-width:400px; padding:12px 16px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;" />
+      <button id="load-my-dashboard-btn" 
+              style="padding:12px 24px; background:#1a237e; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
+        Load My Dashboard
+      </button>
+    </div>
+
+    <!-- Dashboard Content (hidden initially) -->
+    <div id="my-dashboard-content" style="display:none;">
+      
+      <!-- Stats Row -->
+      <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:30px;">
+        <div style="flex:1; min-width:120px; padding:12px 16px; background:#e8eaf6; border-radius:8px;">
+          <div style="font-weight:600; color:#1a237e; font-size:13px;">Rank:</div>
+          <div id="stat-rank" style="font-size:20px; font-weight:700; color:#1a237e;">-</div>
+        </div>
+        <div style="flex:1; min-width:120px; padding:12px 16px; background:#e8eaf6; border-radius:8px;">
+          <div style="font-weight:600; color:#1a237e; font-size:13px;">CS:</div>
+          <div id="stat-cs" style="font-size:20px; font-weight:700; color:#1a237e;">-</div>
+        </div>
+        <div style="flex:1; min-width:120px; padding:12px 16px; background:#e8eaf6; border-radius:8px;">
+          <div style="font-weight:600; color:#1a237e; font-size:13px;">Vibe:</div>
+          <div id="stat-vibe" style="font-size:20px; font-weight:700; color:#1a237e;">-</div>
+        </div>
+        <div style="flex:1; min-width:120px; padding:12px 16px; background:#e8eaf6; border-radius:8px;">
+          <div style="font-weight:600; color:#1a237e; font-size:13px;">HP:</div>
+          <div id="stat-hp" style="font-size:20px; font-weight:700; color:#1a237e;">-</div>
+        </div>
+        <div style="flex:1; min-width:120px; padding:12px 16px; background:#e8eaf6; border-radius:8px;">
+          <div style="font-weight:600; color:#1a237e; font-size:13px;">Overall:</div>
+          <div id="stat-overall" style="font-size:20px; font-weight:700; color:#1a237e;">-</div>
+        </div>
+      </div>
+
+      <!-- Next Deadline -->
+      <div style="background:#FFF9C4; padding:12px 16px; border-radius:8px; margin-bottom:30px; border-left:4px solid #F57C00;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">⏰</span>
+          <span id="next-deadline-text" style="font-weight:600; color:#1a237e;">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Vibe Milestones -->
+      <div style="margin-bottom:30px;">
+        <h3 style="color:#1a237e; margin-bottom:16px;">Vibe Milestones</h3>
+        <div id="vibe-milestones" style="display:flex; flex-direction:column; gap:10px;">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+
+      <!-- Case Study Milestones -->
+      <div style="margin-bottom:30px;">
+        <h3 style="color:#1a237e; margin-bottom:16px;">Case Study Milestones</h3>
+        <div id="cs-milestones" style="display:flex; flex-direction:column; gap:10px;">
+          <!-- Dynamic content -->
+        </div>
+        <div style="margin-top:14px;">
+          <button id="view-cs-details" 
+                  style="padding:10px 16px; background:#1a237e; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
+            View my CS details →
+          </button>
+        </div>
+      </div>
+
+      <!-- HP Status -->
+      <div style="margin-bottom:30px;">
+        <h3 style="color:#1a237e; margin-bottom:16px;">HP Status</h3>
+        <div id="hp-status-box" style="padding:20px; border-radius:12px; background:#C8E6C9;">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Error Message -->
+    <div id="my-dashboard-error" style="display:none; padding:20px; background:#FFCDD2; border-radius:8px; color:#B71C1C; font-weight:600;">
+      Student not found. Please check your email and try again.
+    </div>
+
   </div>
 </div>
 
@@ -970,6 +1064,179 @@ document.querySelectorAll('#tab-health .menu-item').forEach(item => {
 
   // Boot
   loadAPI();
+
+  // ========= MY DASHBOARD =========
+  function loadMyDashboard() {
+    const emailInput = document.getElementById('my-email-input');
+    const email = emailInput.value.trim().toLowerCase();
+    
+    const contentDiv = document.getElementById('my-dashboard-content');
+    const errorDiv = document.getElementById('my-dashboard-error');
+    
+    contentDiv.style.display = 'none';
+    errorDiv.style.display = 'none';
+    
+    if (!email) {
+      alert('Please enter your email');
+      return;
+    }
+    
+    if (!apiData || !apiData.dashboard) {
+      alert('Data not loaded yet. Please wait.');
+      return;
+    }
+    
+    // Find student in dashboard data
+    const student = apiData.dashboard.find(s => 
+      (s.Email || '').toLowerCase().trim() === email
+    );
+    
+    if (!student) {
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    // Show content
+    contentDiv.style.display = 'block';
+    
+    // Populate stats
+    document.getElementById('stat-rank').textContent = student.Rank || '-';
+    document.getElementById('stat-cs').textContent = (student['Case Study Progress'] || 0) + ' %';
+    document.getElementById('stat-vibe').textContent = (student['Vibe Progress'] || 0) + ' %';
+    document.getElementById('stat-hp').textContent = Number(student['Health Points'] || 0).toFixed(2);
+    document.getElementById('stat-overall').textContent = (student['Overall Progress'] || 0) + ' %';
+    
+    // Calculate days until next deadline (CS Week 1: 2026-02-12)
+    const today = new Date('2026-02-02');
+    const csWeek1Deadline = new Date('2026-02-12');
+    const daysLeft = Math.ceil((csWeek1Deadline - today) / (1000 * 60 * 60 * 24));
+    
+    document.getElementById('next-deadline-text').textContent = 
+      `Next Deadline: CS Week 1 — 2026-02-12 (${daysLeft} days left!)`;
+    
+    // Vibe Milestones
+    const vibeProgress = Number(student['Vibe Progress'] || 0);
+    const vibeMilestones = [
+      { phase: 1, target: 25, deadline: '2026-01-22' },
+      { phase: 2, target: 50, deadline: '2026-01-29' },
+      { phase: 3, target: 75, deadline: '2026-02-05' },
+      { phase: 4, target: 100, deadline: '2026-02-12' }
+    ];
+    
+    const vibeContainer = document.getElementById('vibe-milestones');
+    vibeContainer.innerHTML = '';
+    
+    vibeMilestones.forEach(m => {
+      const current = Math.min(vibeProgress, m.target);
+      const completed = vibeProgress >= m.target;
+      const statusIcon = completed ? '✅' : '⚠️';
+      const statusText = completed ? 'Completed' : 'In progress';
+      const statusColor = completed ? '#1B5E20' : '#F57C00';
+      const bgColor = completed ? '#C8E6C9' : '#FFE0B2';
+      
+      vibeContainer.innerHTML += `
+        <div style="padding:12px 16px; background:${bgColor}; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-weight:600; color:#1a237e;">
+            Vibe Phase ${m.phase} — ${current}% / ${m.target}%
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="color:${statusColor}; font-weight:600;">${statusIcon} ${statusText}</span>
+            <span style="color:#6b7280; font-size:13px;">Deadline: ${m.deadline}</span>
+          </div>
+        </div>
+      `;
+    });
+    
+    // Case Study Milestones
+    const csProgress = Number(student['Case Study Progress'] || 0);
+    const csMilestones = [
+      { week: 1, total: 6, deadline: '2026-02-12' },
+      { week: 2, total: 18, deadline: '2026-02-19' },
+      { week: 3, total: 30, deadline: '2026-02-26' },
+      { week: 4, total: 42, deadline: '2026-03-05' }
+    ];
+    
+    const csContainer = document.getElementById('cs-milestones');
+    csContainer.innerHTML = '';
+    
+    csMilestones.forEach(m => {
+      // Approximate completed CS based on progress percentage
+      const completed = Math.floor((csProgress / 100) * m.total);
+      const isComplete = completed >= m.total;
+      const statusIcon = isComplete ? '✅' : '⚠️';
+      const statusText = isComplete ? 'Completed' : 'In progress';
+      const statusColor = isComplete ? '#1B5E20' : '#F57C00';
+      const bgColor = isComplete ? '#C8E6C9' : '#FFE0B2';
+      
+      csContainer.innerHTML += `
+        <div style="padding:12px 16px; background:${bgColor}; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-weight:600; color:#1a237e;">
+            CS Week ${m.week} — ${completed} / ${m.total} CS
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="color:${statusColor}; font-weight:600;">${statusIcon} ${statusText}</span>
+            <span style="color:#6b7280; font-size:13px;">Deadline: ${m.deadline}</span>
+          </div>
+        </div>
+      `;
+    });
+    
+    // HP Status
+    const currentHP = Number(student['Health Points'] || 0);
+    const baseHP = 112.00; // Standard base HP
+    const isSafe = currentHP >= baseHP;
+    const statusColor = isSafe ? '#1B5E20' : '#B71C1C';
+    const bgColor = isSafe ? '#C8E6C9' : '#FFCDD2';
+    const statusText = isSafe ? 'SAFE' : 'DANGER';
+    
+    // Calculate minimum required Vibe to be safe (53.3% for current date)
+    const minVibeRequired = 53.3;
+    const vibeOnTrack = vibeProgress >= minVibeRequired;
+    
+    // Check CS Week 1
+    const csWeek1Complete = csProgress >= (6/42)*100; // 6 out of 42 total
+    
+    document.getElementById('hp-status-box').style.background = bgColor;
+    document.getElementById('hp-status-box').innerHTML = `
+      <div style="margin-bottom:16px;">
+        <span style="padding:6px 14px; background:${bgColor}; border:2px solid ${statusColor}; color:${statusColor}; border-radius:999px; font-weight:700; font-size:14px;">
+          HP STATUS: ${statusText}
+        </span>
+        <span style="color:#6b7280; font-size:14px; margin-left:10px;">(Current: ${currentHP.toFixed(2)} | Base: ${baseHP.toFixed(2)})</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">${isSafe ? '✅' : '❌'}</span>
+          <span style="color:#1f2937; font-weight:600;">You are ${statusText}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">${vibeOnTrack ? '☑️' : '⚠️'}</span>
+          <span style="color:#1f2937;">Daily Vibe: ${vibeOnTrack ? 'On track' : 'Behind'} (${vibeProgress.toFixed(1)}% ${vibeOnTrack ? '≥' : '<'} ${minVibeRequired}%)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">${csWeek1Complete ? '✅' : '⚠️'}</span>
+          <span style="color:#1f2937;">CS Week 1 ${csWeek1Complete ? 'complete' : 'incomplete'} (${Math.floor((csProgress/100)*6)}/6)</span>
+        </div>
+      </div>
+    `;
+    
+    // View CS Details button
+    document.getElementById('view-cs-details').onclick = () => {
+      activateTopTab('cs');
+      setTimeout(() => {
+        document.getElementById('cs-search').value = email;
+        document.getElementById('cs-search').dispatchEvent(new Event('input'));
+      }, 100);
+    };
+  }
+  
+  // Bind button
+  document.getElementById('load-my-dashboard-btn').addEventListener('click', loadMyDashboard);
+  
+  // Allow Enter key
+  document.getElementById('my-email-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loadMyDashboard();
+  });
 </script>
 
 </body>
